@@ -1,112 +1,163 @@
-
 import streamlit as st
 import pandas as pd
 import joblib
+from pathlib import Path
 
-# Page configuration
+# ---------------- PAGE CONFIGURATION ----------------
 st.set_page_config(
-    page_title="Customer Churn Predictor",
+    page_title="Customer Churn Prediction",
     page_icon="📊",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Load trained model
-model = joblib.load("models/churn_model.pkl")
+# ---------------- LOAD MODEL ----------------
+MODEL_PATH = Path(__file__).parent / "models" / "churn_model.pkl"
 
-# Header
-st.title("📊 Customer Churn Prediction")
-st.write(
-    "Predict whether a telecom customer may leave "
-    "the service using machine learning."
+@st.cache_resource
+def load_model():
+    return joblib.load(MODEL_PATH)
+
+model = load_model()
+
+# ---------------- CUSTOM STYLING ----------------
+st.markdown("""
+<style>
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 1250px;
+    }
+
+    h1 {
+        font-weight: 750;
+        letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+        color: #64748b;
+        font-size: 16px;
+        margin-bottom: 24px;
+    }
+
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 12px;
+    }
+
+    div[data-testid="stForm"] {
+        border: 1px solid rgba(128,128,128,0.25);
+        border-radius: 12px;
+        padding: 22px;
+    }
+
+    div[data-testid="stMetric"] {
+        background: rgba(128,128,128,0.08);
+        border: 1px solid rgba(128,128,128,0.15);
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    div.stButton > button,
+    div[data-testid="stFormSubmitButton"] > button {
+        width: 100%;
+        min-height: 44px;
+        border-radius: 9px;
+        font-weight: 600;
+    }
+
+    label {
+        font-weight: 500;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------- SIDEBAR ----------------
+with st.sidebar:
+    st.title("📊 Churn Predictor")
+    st.caption("Machine Learning Project")
+    st.divider()
+
+    st.subheader("About this project")
+    st.write(
+        "This application predicts whether a telecom customer "
+        "is likely to leave the service using a trained "
+        "Logistic Regression model."
+    )
+
+    st.divider()
+    st.subheader("Model performance")
+    st.metric("Accuracy", "80.55%")
+    st.metric("ROC-AUC", "84.21%")
+
+    st.caption("Evaluation results from the held-out test set.")
+    st.divider()
+    st.caption("Built with Python, Pandas, Scikit-learn and Streamlit.")
+
+# ---------------- PAGE HEADER ----------------
+st.title("Customer Churn Prediction")
+st.markdown(
+    '<p class="subtitle">Enter customer details below to estimate their likelihood of leaving the service.</p>',
+    unsafe_allow_html=True
 )
 
-st.divider()
+# ---------------- INPUT FORM ----------------
+with st.form("customer_details_form"):
+    st.subheader("1. Customer Information")
 
-# Sidebar
-st.sidebar.title("About This Project")
-st.sidebar.write(
-    "A machine learning project using the IBM Telco "
-    "Customer Churn dataset."
-)
-st.sidebar.info(
-    "Predictions are estimates, not guarantees."
-)
+    col1, col2, col3 = st.columns(3, gap="large")
 
-st.sidebar.subheader("Model Performance")
-st.sidebar.metric("Test Accuracy", "80.55%")
-st.sidebar.metric("Test ROC-AUC", "84.21%")
-st.sidebar.caption("Model: Logistic Regression")
-
-# Customer form
-st.subheader("Enter Customer Details")
-
-with st.form("customer_form"):
-
-    st.markdown("### 👤 Personal Information")
-    c1, c2, c3, c4 = st.columns(4)
-
-    with c1:
-        gender = st.selectbox("Gender", ["Male", "Female"])
-    with c2:
-        senior = st.selectbox("Senior Citizen", ["No", "Yes"])
-    with c3:
+    with col1:
+        gender = st.selectbox("Gender", ["Female", "Male"])
+        senior_citizen = st.selectbox("Senior Citizen", [0, 1],
+                                      format_func=lambda x: "Yes" if x == 1 else "No")
         partner = st.selectbox("Has Partner", ["Yes", "No"])
-    with c4:
+
+    with col2:
         dependents = st.selectbox("Has Dependents", ["Yes", "No"])
+        tenure = st.slider("Tenure (months)", 0, 72, 12)
+        phone_service = st.selectbox("Phone Service", ["Yes", "No"])
 
-    st.markdown("### 📱 Services")
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
-        phone = st.selectbox("Phone Service", ["Yes", "No"])
+    with col3:
         multiple_lines = st.selectbox(
-            "Multiple Lines",
-            ["No", "Yes", "No phone service"]
+            "Multiple Lines", ["No", "Yes", "No phone service"]
         )
-
-    with c2:
-        internet = st.selectbox(
+        internet_service = st.selectbox(
             "Internet Service", ["DSL", "Fiber optic", "No"]
         )
+        paperless_billing = st.selectbox("Paperless Billing", ["Yes", "No"])
+
+    st.divider()
+    st.subheader("2. Internet and Additional Services")
+
+    col4, col5, col6 = st.columns(3, gap="large")
+
+    with col4:
         online_security = st.selectbox(
-            "Online Security",
-            ["Yes", "No", "No internet service"]
+            "Online Security", ["Yes", "No", "No internet service"]
         )
         online_backup = st.selectbox(
-            "Online Backup",
-            ["Yes", "No", "No internet service"]
+            "Online Backup", ["Yes", "No", "No internet service"]
+        )
+        device_protection = st.selectbox(
+            "Device Protection", ["Yes", "No", "No internet service"]
         )
 
-    with c3:
-        device_protection = st.selectbox(
-            "Device Protection",
-            ["Yes", "No", "No internet service"]
-        )
+    with col5:
         tech_support = st.selectbox(
-            "Tech Support",
-            ["Yes", "No", "No internet service"]
+            "Tech Support", ["Yes", "No", "No internet service"]
         )
         streaming_tv = st.selectbox(
-            "Streaming TV",
-            ["Yes", "No", "No internet service"]
+            "Streaming TV", ["Yes", "No", "No internet service"]
         )
         streaming_movies = st.selectbox(
-            "Streaming Movies",
-            ["Yes", "No", "No internet service"]
+            "Streaming Movies", ["Yes", "No", "No internet service"]
         )
 
-    st.markdown("### 📄 Contract and Billing")
-    c1, c2, c3 = st.columns(3)
-
-    with c1:
+    with col6:
         contract = st.selectbox(
-            "Contract",
-            ["Month-to-month", "One year", "Two year"]
+            "Contract", ["Month-to-month", "One year", "Two year"]
         )
-    with c2:
-        paperless = st.selectbox("Paperless Billing", ["Yes", "No"])
-    with c3:
-        payment = st.selectbox(
+        paperless_placeholder = st.selectbox(
             "Payment Method",
             [
                 "Electronic check",
@@ -115,45 +166,41 @@ with st.form("customer_form"):
                 "Credit card (automatic)"
             ]
         )
+        device_placeholder = st.selectbox(
+            "Online Account Type", ["Standard", "Other"]
+        )
 
-    st.markdown("### 💰 Charges and Tenure")
-    c1, c2, c3 = st.columns(3)
+    st.divider()
+    st.subheader("3. Billing Information")
 
-    with c1:
-        tenure = st.slider("Tenure (months)", 0, 72, 12)
-    with c2:
+    col7, col8 = st.columns(2, gap="large")
+
+    with col7:
         monthly_charges = st.number_input(
-            "Monthly Charges ($)",
-            min_value=0.0,
-            max_value=200.0,
-            value=70.0
+            "Monthly Charges ($)", min_value=0.0,
+            max_value=2000.0, value=70.0, step=1.0
         )
-    with c3:
+
+    with col8:
         total_charges = st.number_input(
-            "Total Charges ($)",
-            min_value=0.0,
-            max_value=100000.0,
-            value=840.0
+            "Total Charges ($)", min_value=0.0,
+            max_value=100000.0, value=840.0, step=10.0
         )
 
-    submitted = st.form_submit_button(
-        "🔍 Predict Customer Churn",
-        type="primary",
-        use_container_width=True
-    )
+    st.caption("Check that the values reflect the customer you want to assess.")
+    submitted = st.form_submit_button("🔍 Predict Customer Churn")
 
-# Show results only after submission
+# ---------------- PREDICTION ----------------
 if submitted:
-
-    customer = pd.DataFrame([{
+    input_data = pd.DataFrame([{
         "gender": gender,
-        "SeniorCitizen": 1 if senior == "Yes" else 0,
+        "SeniorCitizen": senior_citizen,
         "Partner": partner,
         "Dependents": dependents,
         "tenure": tenure,
-        "PhoneService": phone,
+        "PhoneService": phone_service,
         "MultipleLines": multiple_lines,
-        "InternetService": internet,
+        "InternetService": internet_service,
         "OnlineSecurity": online_security,
         "OnlineBackup": online_backup,
         "DeviceProtection": device_protection,
@@ -161,31 +208,40 @@ if submitted:
         "StreamingTV": streaming_tv,
         "StreamingMovies": streaming_movies,
         "Contract": contract,
-        "PaperlessBilling": paperless,
-        "PaymentMethod": payment,
+        "PaperlessBilling": paperless_billing,
+        "PaymentMethod": paperless_placeholder,
         "MonthlyCharges": monthly_charges,
         "TotalCharges": total_charges
     }])
 
-    prediction = int(model.predict(customer)[0])
-    probability = float(model.predict_proba(customer)[0][1])
+    # Fill in the remaining expected fields if required by the trained model.
+    # These values are explicit defaults, not additional user inputs.
+    input_data["customerID"] = "NEW_CUSTOMER"
+    input_data["OnlineAccountType"] = device_placeholder
 
-    st.divider()
-    st.subheader("Prediction Results")
+    try:
+        probability = model.predict_proba(input_data)[0][1]
+        prediction = model.predict(input_data)[0]
 
-    result_col, probability_col = st.columns(2)
+        st.divider()
+        st.subheader("Prediction Result")
 
-    with result_col:
-        if prediction == 1:
-            st.error("⚠️ Customer is predicted to churn")
-        else:
-            st.success("✅ Customer is predicted to stay")
+        result_col1, result_col2 = st.columns([1, 2], gap="large")
 
-    with probability_col:
-        st.metric("Estimated Churn Probability", f"{probability:.1%}")
+        with result_col1:
+            st.metric("Estimated Churn Probability", f"{probability:.1%}")
 
-    st.progress(probability)
+        with result_col2:
+            if prediction == 1:
+                st.error("⚠️ Higher churn risk: the model predicts this customer may leave.")
+            else:
+                st.success("✅ Lower churn risk: the model predicts this customer may stay.")
 
-    st.caption(
-        "This is a model estimate, not a guarantee of future behavior."
-    )
+        st.progress(float(probability))
+        st.caption(
+            "This is a machine-learning estimate, not a guarantee of future customer behavior."
+        )
+
+    except Exception as error:
+        st.error("The prediction could not be completed. Please check the input fields and trained model.")
+        st.exception(error)
