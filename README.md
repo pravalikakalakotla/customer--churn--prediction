@@ -1,6 +1,9 @@
 
 # Customer Churn Prediction
 
+🚀 **Live Demo:** [Try the Customer Churn Predictor](https://pravalika-churn-predictor.streamlit.app/)
+
+
 ## 1. Project Overview
 
 Customer Churn Prediction is a machine learning project that predicts whether a telecom customer is likely to leave a service.
